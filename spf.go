@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+
+	crc "git.barfuss.email/jan/crc16"
 )
 
 type SimpleFinancePackage struct {
@@ -13,11 +15,18 @@ type SimpleFinancePackage struct {
 	Asset     byte    // 1 byte for asset
 	Price     float64 // 8 bytes for price (float64 for precision)
 	Volume    float64 // 8 bytes for volume
+	CRC       uint16  // 2 bytes for CRC
 }
 
 func ParseSimpleFinanacePackage(data []byte) (*SimpleFinancePackage, error) {
-	if len(data) != 26 {
-		return nil, errors.New("invalid packet size, expected 26 bytes")
+	if len(data) != 28 {
+		return nil, errors.New("invalid packet size, expected 28 bytes")
+	}
+
+	//Check CRC
+	check := binary.BigEndian.Uint16(data[26:])
+	if check != crc.Calculate(data[:26]) {
+		return nil, errors.New("CRC check failed")
 	}
 
 	reader := bytes.NewReader(data)
@@ -57,6 +66,13 @@ func EncodeSimpleFinanacePackage(packet SimpleFinancePackage) ([]byte, error) {
 	}
 	if err := binary.Write(buf, binary.BigEndian, packet.Volume); err != nil {
 		return nil, fmt.Errorf("failed to encode volume: %w", err)
+	}
+
+	// Calculate and write CRC
+	packet.CRC = crc.Calculate(buf.Bytes())
+
+	if err := binary.Write(buf, binary.BigEndian, packet.CRC); err != nil {
+		return nil, fmt.Errorf("failed to encode CRC: %w", err)
 	}
 
 	// Return the resulting byte slice

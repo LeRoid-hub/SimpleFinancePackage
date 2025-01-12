@@ -24,8 +24,8 @@ func TestEncodeDecodeCustomPacket(t *testing.T) {
 	}
 
 	// Check the encoded length
-	if len(encoded) != 26 {
-		t.Fatalf("Encoded data has incorrect length: got %d, want 26", len(encoded))
+	if len(encoded) != 28 {
+		t.Fatalf("Encoded data has incorrect length: got %d, want 28", len(encoded))
 	}
 
 	// Decode the packet
