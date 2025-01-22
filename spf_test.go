@@ -15,6 +15,7 @@ func TestEncodeDecodeCustomPacket(t *testing.T) {
 		Asset:     2,
 		Price:     1234.56,
 		Volume:    7890.12,
+		Expire:    946684801,
 	}
 
 	// Encode the packet
@@ -24,8 +25,8 @@ func TestEncodeDecodeCustomPacket(t *testing.T) {
 	}
 
 	// Check the encoded length
-	if len(encoded) != 28 {
-		t.Fatalf("Encoded data has incorrect length: got %d, want 28", len(encoded))
+	if len(encoded) != 37 {
+		t.Fatalf("Encoded data has incorrect length: got %d, want 37", len(encoded))
 	}
 
 	// Decode the packet
@@ -76,6 +77,7 @@ func TestInvalidPacketValues(t *testing.T) {
 		Asset:     2,
 		Price:     1234.56,
 		Volume:    7890.12,
+		Expire:    946684801,
 	}
 	encoded, _ := EncodeSimpleFinanacePackage(validPacket)
 

@@ -12,20 +12,21 @@ import (
 type SimpleFinancePackage struct {
 	Key       [8]byte // 8 bytes for the key
 	Operation byte    // 1 byte for operation
-	Asset     byte    // 1 byte for asset
+	Asset     uint16  // 2 bytes for asset
 	Price     float64 // 8 bytes for price (float64 for precision)
 	Volume    float64 // 8 bytes for volume
+	Expire    uint64  // 8 bytes for expiration date
 	CRC       uint16  // 2 bytes for CRC
 }
 
 func ParseSimpleFinanacePackage(data []byte) (*SimpleFinancePackage, error) {
-	if len(data) != 28 {
-		return nil, errors.New("invalid packet size, expected 28 bytes")
+	if len(data) != 37 {
+		return nil, errors.New("invalid packet size, expected 37 bytes")
 	}
 
 	//Check CRC
-	check := binary.BigEndian.Uint16(data[26:])
-	if check != crc.Calculate(data[:26]) {
+	check := binary.BigEndian.Uint16(data[35:])
+	if check != crc.Calculate(data[:35]) {
 		return nil, errors.New("CRC check failed")
 	}
 
@@ -41,8 +42,11 @@ func ParseSimpleFinanacePackage(data []byte) (*SimpleFinancePackage, error) {
 	if packet.Price < 0 || packet.Volume < 0 {
 		return nil, errors.New("price and volume must be non-negative")
 	}
-	if packet.Operation > 127 { // Example: Valid operation values are 0-127
+	if packet.Operation > 127 { // Valid operation values are 0-127
 		return nil, errors.New("invalid operation value")
+	}
+	if packet.Expire < 946684800 { // Expire date must be after 2000-01-01
+		return nil, errors.New("invalid expiration date")
 	}
 
 	return &packet, nil
@@ -66,6 +70,9 @@ func EncodeSimpleFinanacePackage(packet SimpleFinancePackage) ([]byte, error) {
 	}
 	if err := binary.Write(buf, binary.BigEndian, packet.Volume); err != nil {
 		return nil, fmt.Errorf("failed to encode volume: %w", err)
+	}
+	if err := binary.Write(buf, binary.BigEndian, packet.Expire); err != nil {
+		return nil, fmt.Errorf("failed to encode expiration date: %w", err)
 	}
 
 	// Calculate and write CRC
